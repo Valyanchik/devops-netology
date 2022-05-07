@@ -221,7 +221,6 @@ centosfile  debianfile  hostfile
 valyan@valyan-pc:~/data$ 
 ```
 
-
 ## Задача 4 (*)
 
 Воспроизвести практическую часть лекции самостоятельно.

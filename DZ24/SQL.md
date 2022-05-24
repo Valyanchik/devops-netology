@@ -427,41 +427,23 @@ valyan@valyan-pc:~$
 ```
 
 Поднимите новый пустой контейнер с PostgreSQL.
-
 ```bash
 ##Запускаем новый контейнер
 valyan@valyan-pc:~$ docker run --rm --name pg-docker2 -e POSTGRES_PASSWORD=postgres -ti -p 5432:5432 -v vol1:/var/lib/postgressql/data -v vol2:/var/lib/postgressql/backup postgres:12
-
-##Проверяем, что контейнер запустился корректно
-valyan@valyan-pc:~$ docker ps
-CONTAINER ID   IMAGE         COMMAND                  CREATED          STATUS          PORTS                                       NAMES
-308240c62c59   postgres:12   "docker-entrypoint.s…"   27 seconds ago   Up 27 seconds   0.0.0.0:5432->5432/tcp, :::5432->5432/tcp   pg-docker2
-
 ##Подключаемся к контейнеру
 valyan@valyan-pc:~$ docker exec -it pg-docker2 bash
-
-##Подключаемся к экземпляру postgres и создаем пустую БД test_db
-root@308240c62c59:/# psql -U postgres
-psql (12.11 (Debian 12.11-1.pgdg110+1))
-Type "help" for help.
-
-postgres=# CREATE DATABASE test_db
-postgres-# ;
-CREATE DATABASE
-postgres=# 
 ```
+
 Восстановите БД test_db в новом контейнере.
 ```bash
-##Запускаем новый контейнер
-valyan@valyan-pc:~$ docker run --rm --name pg-docker2 -e POSTGRES_PASSWORD=postgres -ti -p 5432:5432 -v vol1:/var/lib/postgressql/data -v vol2:/var/lib/postgressql/backup postgres:12
-##Подключаемся к контейнеру
-valyan@valyan-pc:~$ docker exec -it pg-docker2 bash
 ##Подключаемся к инстансу postgres и создаем БД test_db, и 2 роли test-admin-user и test-simple-user, т.к мы бэкапили на предыдущем шаге только базу test_db с данными
 root@59efba7794fa:/# psql -U postgres
 psql (12.11 (Debian 12.11-1.pgdg110+1))
 Type "help" for help.
+##создаем пустую БД test_db
 postgres=# CREATE DATABASE test_db;
 CREATE DATABASE
+##переключаемся на test_db и создаем роли test-admin-user и test-simple-user"
 postgres=# \c test_db
 You are now connected to database "test_db" as user "postgres".
 test_db=# CREATE ROLE "test-admin-user";
@@ -470,7 +452,7 @@ test_db=# CREATE ROLE "test-simple-user";
 CREATE ROLE
 test_db=# exit
 
-##GПосле чего восстанавливаем базу test_db из бэкапа по пути /var/lib/postgressql/backup/test_db_dump
+##После чего восстанавливаем базу test_db из бэкапа по пути /var/lib/postgressql/backup/test_db_dump
 root@59efba7794fa:/# psql -U postgres test_db < /var/lib/postgressql/backup/test_db_dump
 SET
 SET
@@ -501,8 +483,8 @@ GRANT
 GRANT
 GRANT
 GRANT
-```
-Приведите список операций, который вы применяли для бэкапа данных и восстановления. 
+``` 
+
 Проверяем в dbeaver, что случилось с БД после бэкапа:  
 -настройки драйвера postgreSQL:
 ![img_14.png](img_14.png) 

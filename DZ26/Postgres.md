@@ -2,6 +2,8 @@
 
 ## Задача 1
 ```bash
+##Используя docker поднимите инстанс PostgreSQL (версию 13). Данные БД сохраните в volume.
+
 valyan@valyan-pc:~$ docker pull postgres:13
 13: Pulling from library/postgres
 214ca5fb9032: Already exists 
@@ -24,6 +26,7 @@ valyan@valyan-pc:~$ docker volume create vol_postgres
 vol_postgres
 valyan@valyan-pc:~$ docker run --rm --name pg-docker -e POSTGRES_PASSWORD=postgres -ti -p 5432:5432 -v vol_postgres:/var/lib/postgresql/data postgres:13
 
+##Подключитесь к БД PostgreSQL используя `psql`.
 valyan@valyan-pc:~$ docker exec -it pg-docker bash
 root@70f17c4b15d5:/# psql -u postgres
 /usr/lib/postgresql/13/bin/psql: invalid option -- 'u'
@@ -32,6 +35,7 @@ root@70f17c4b15d5:/# psql -U postgres
 psql (13.7 (Debian 13.7-1.pgdg110+1))
 Type "help" for help.
 
+##вывод списка БД
 postgres=# \l
                                  List of databases
    Name    |  Owner   | Encoding |  Collate   |   Ctype    |   Access privileges
@@ -49,8 +53,12 @@ es
 es
 (3 rows)
 
+##Подключение к БД postgres
 postgres=# \c postgres
 You are now connected to database "postgres" as user "postgres".
+
+
+###вывода списка таблиц (добавил ключ S к команде \dt, так как без него ничего не выводило, т.к база по сути пустая и создается при инициализации БД
 postgres=# \dtS
                     List of relations
    Schema   |          Name           | Type  |  Owner   
@@ -121,9 +129,7 @@ postgres=# \dtS
  pg_catalog | pg_user_mapping         | table | postgres
 (62 rows)
 
-postgres=# \d[S+] NAME
-invalid command \d[S+]
-Try \? for help.
+##Вывод содержимого служебных таблиц в базе postgres
 postgres=# \dS+ pg_index
                                       Table "pg_catalog.pg_index"
      Column     |     Type     | Collation | Nullable | Default | Storage  | Sta
@@ -176,29 +182,20 @@ Indexes:
 
 ...skipping 1 line
 
+##выход из psql
 postgres=# \q
 root@70f17c4b15d5:/#
 ```
-Используя docker поднимите инстанс PostgreSQL (версию 13). Данные БД сохраните в volume.
-
-Подключитесь к БД PostgreSQL используя `psql`.
-
-Воспользуйтесь командой `\?` для вывода подсказки по имеющимся в `psql` управляющим командам.
-
-**Найдите и приведите** управляющие команды для:
-- вывода списка БД
-- подключения к БД
-- вывода списка таблиц
-- вывода описания содержимого таблиц
-- выхода из psql
 
 ## Задача 2
 ```bash
+
+##Изучите [бэкап БД](https://github.com/netology-code/virt-homeworks/tree/master/06-db-04-postgresql/test_data).
+
+## Копируем файл бэкапа внутрь контейнера
 valyan@valyan-pc:~$ docker cp /home/valyan/test_dump.sql pg-docker:/var/lib/postgresql/data/test_dump.sql
 
-
 valyan@valyan-pc:~$ docker exec -it pg-docker bash
-
 root@70f17c4b15d5:/var/lib/postgresql/data# ls
 base	      pg_ident.conf  pg_serial	   pg_tblspc	postgresql.auto.conf
 global	      pg_logical     pg_snapshots  pg_twophase	postgresql.conf
@@ -206,6 +203,8 @@ pg_commit_ts  pg_multixact   pg_stat	   PG_VERSION	postmaster.opts
 pg_dynshmem   pg_notify      pg_stat_tmp   pg_wal	postmaster.pid
 pg_hba.conf   pg_replslot    pg_subtrans   pg_xact	test_dump.sql
 
+
+##Используя `psql` создайте БД `test_database`.
 postgres=# CREATE DATABASE test_database;
 CREATE DATABASE
 postgres=# \l
@@ -221,6 +220,8 @@ postgres=# \l
 (4 rows)
 
 postgres=# \q
+
+##Восстановите бэкап БД в `test_database`.
 root@70f17c4b15d5:~# psql -U postgres test_database < /var/lib/postgresql/data/test_dump.sql
 SET
 SET
@@ -257,6 +258,7 @@ root@70f17c4b15d5:~# psql -U postgres
 psql (13.7 (Debian 13.7-1.pgdg110+1))
 Type "help" for help.
 
+##Используя управляющую консоль подключаемся к восстановленной из бэкапа test_database
 postgres=# \c test_database
 You are now connected to database "test_database" as user "postgres".
 test_database=# \dt
@@ -266,10 +268,14 @@ test_database=# \dt
  public | orders | table | postgres
 (1 row)
 
+##Подключитесь к восстановленной БД и проведите операцию ANALYZE для сбора статистики по таблице.
 test_database=# ANALYZE VERBOSE public.orders;
 INFO:  analyzing "public.orders"
 INFO:  "orders": scanned 1 of 1 pages, containing 8 live rows and 0 dead rows; 8 rows in sample, 8 estimated total rows
 ANALYZE
+
+##Используя таблицу [pg_stats](https://postgrespro.ru/docs/postgresql/12/view-pg-stats), найдите столбец таблицы `orders` 
+##с наибольшим средним значением размера элементов в байтах.
 test_database=# select avg_width from pg_stats where tablename='orders';
  avg_width 
 -----------
@@ -280,43 +286,9 @@ test_database=# select avg_width from pg_stats where tablename='orders';
 
 
 ```
-Используя `psql` создайте БД `test_database`.
-
-Изучите [бэкап БД](https://github.com/netology-code/virt-homeworks/tree/master/06-db-04-postgresql/test_data).
-
-Восстановите бэкап БД в `test_database`.
-
-Перейдите в управляющую консоль `psql` внутри контейнера.
-
-Подключитесь к восстановленной БД и проведите операцию ANALYZE для сбора статистики по таблице.
-
-Используя таблицу [pg_stats](https://postgrespro.ru/docs/postgresql/12/view-pg-stats), найдите столбец таблицы `orders` 
-с наибольшим средним значением размера элементов в байтах.
-
-**Приведите в ответе** команду, которую вы использовали для вычисления и полученный результат.
 
 ## Задача 3
-```bash
-test_database=# alter table orders rename to orders_origin;
-ALTER TABLE
-test_database=# create table orders_shard (id integer, title varchar(80), price integer) partiton by range price;
-ERROR:  syntax error at or near "partiton"
-LINE 1: ...rd (id integer, title varchar(80), price integer) partiton b...
-                                                             ^
-test_database=# create table orders_shard (id integer, title varchar(80), price integer) partition by range price;
-ERROR:  syntax error at or near "price"
-LINE 1: ... title varchar(80), price integer) partition by range price;
-                                                                 ^
-test_database=# create table orders_shard (id integer, title varchar(80), price integer) partition by range(price);
-CREATE TABLE
-test_database=# create table orders1 partition of orders_shard for values from (0) to (499);
-CREATE TABLE
-test_database=# create table orders2 partition of orders_shard for values from (499) to (9999999);
-CREATE TABLE
-test_database=# insert into orders_shard (id, title, price) select * from orders_origin;
-INSERT 0 8
-test_database=# 
-```
+
 Архитектор и администратор БД выяснили, что ваша таблица orders разрослась до невиданных размеров и
 поиск по ней занимает долгое время. Вам, как успешному выпускнику курсов DevOps в нетологии предложили
 провести разбиение таблицы на 2 (шардировать на orders_1 - price>499 и orders_2 - price<=499).
@@ -325,12 +297,36 @@ test_database=#
 
 Можно ли было изначально исключить "ручное" разбиение при проектировании таблицы orders?
 
+
+```bash
+## Шардируем таблицу поэтапно:
+
+##Переименовываем исходную таблицу
+test_database=# alter table orders rename to orders_origin;
+ALTER TABLE
+
+##Создаем новую таблицу, в которую смонтируем 2 подтаблицы с значениями от 0..499 и 499..9999999
+test_database=# create table orders_shard (id integer, title varchar(80), price integer) partition by range(price);
+CREATE TABLE
+
+##СОздаем подтяблицу для значений от 0 до 499
+test_database=# create table orders1 partition of orders_shard for values from (0) to (499);
+CREATE TABLE
+
+##Создаем подтяблицу для значений от 499 до 9999999
+test_database=# create table orders2 partition of orders_shard for values from (499) to (9999999);
+CREATE TABLE
+
+##Монтируем в шардированную таблицу значения из исходной, который разобьются после по 2 таблицам
+test_database=# insert into orders_shard (id, title, price) select * from orders_origin;
+INSERT 0 8
+test_database=# 
+```
+
+При изначальном проектировании можно было предусмотреть секционирование таблицы при значениях свыше определнного уровня(к примеру в таблице свыше 500000 строк)
+
 ## Задача 4
-
 Используя утилиту `pg_dump` создайте бекап БД `test_database`.
-
-Как бы вы доработали бэкап-файл, чтобы добавить уникальность значения столбца `title` для таблиц `test_database`?
-
 ```bash
 root@70f17c4b15d5:/var/lib/postgresql/data# pg_dump -U postgres test_database>test_database_dump.sql
 root@70f17c4b15d5:/var/lib/postgresql/data# ls
@@ -506,6 +502,8 @@ ALTER TABLE ONLY public.orders_origin
 -- PostgreSQL database dump complete
 --
 ```
+Как бы вы доработали бэкап-файл, чтобы добавить уникальность значения столбца `title` для таблиц `test_database`?  
 
 Для уникальности можно добавить индекс, заодно и перечитываться будет быстрее:  
+
 CREATE INDEX ON orders ((lower(title)));

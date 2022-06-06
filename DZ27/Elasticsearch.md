@@ -57,7 +57,8 @@ USER elasticsearch
 CMD ["/usr/sbin/init"]
 CMD ["/elasticsearch-7.11.1/bin/elasticsearch"]
 ```
-
+конфигурационный .yml файл взял дефолтный(вычитал в интернетах)
+https://github.com/Valyanchik/devops-netology/blob/main/DZ27/elasticsearch.yml
 ```bash
 ##СОбираем докер-образ из файла
 valyan@valyan-pc:~/Docker$ docker build -t valyan_elastic:v1 .
